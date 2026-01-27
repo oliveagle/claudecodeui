@@ -91,3 +91,27 @@ version-tag:
   git tag -a "v$v" -m "Release v$v"
   git push fork "v$v"
   echo "Created and pushed tag: v$v"
+
+# Start production service with podman compose (port 7853, latest image)
+up:
+  #!/bin/bash
+  echo "Starting production service on port 7853 (latest image)"
+  podman compose -f docker-compose.yml down 2>/dev/null || true
+  podman compose -f docker-compose.yml up -d
+
+# Stop production service
+down:
+  podman compose -f docker-compose.yml down
+
+# Start previous working version (MANUALLY MAINTAINED for extreme cases)
+# Uses port 7854 to avoid conflict with main service
+# Update the image version manually when a new stable version is confirmed
+prev-working:
+  #!/bin/bash
+  VERSION="1.15.1"
+  PORT="7854"
+  echo "Starting previous working version: $VERSION on port $PORT"
+  podman compose -f docker-compose.yml down 2>/dev/null || true
+  IMAGE="ghcr.io/oliveagle/claudecodeui/ccui-server:${VERSION}" \
+  HOST_PORT="${PORT}" \
+  podman compose -f docker-compose.yml up -d

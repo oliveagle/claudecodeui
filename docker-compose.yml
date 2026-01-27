@@ -2,10 +2,10 @@
 # After pushing to GitHub, images will be available at ghcr.io/oliveagle/claudecodeui/*
 services:
   server:
-    image: ghcr.io/oliveagle/claudecodeui/ccui-server:latest
+    image: ${IMAGE:-ghcr.io/oliveagle/claudecodeui/ccui-server:latest}
     container_name: ccui-server
     ports:
-      - "7853:7853"
+      - "${HOST_PORT:-7853}:7853"
     environment:
       - PORT=7853
       - NODE_ENV=production
