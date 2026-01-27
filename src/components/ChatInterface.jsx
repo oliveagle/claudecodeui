@@ -1913,6 +1913,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
   // (prevents background sessions from streaming into a different view).
   const pendingViewSessionRef = useRef(null);
   const commandQueryTimerRef = useRef(null);
+  const messageQueueTimerRef = useRef(null);
   const [debouncedInput, setDebouncedInput] = useState('');
   const [showFileDropdown, setShowFileDropdown] = useState(false);
   const [fileList, setFileList] = useState([]);
@@ -3036,6 +3037,11 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
             // Clear any streaming leftovers from the previous session
             resetStreamingState();
             pendingViewSessionRef.current = null;
+            // Clear any pending message queue timeout when switching sessions
+            if (messageQueueTimerRef.current) {
+              clearTimeout(messageQueueTimerRef.current);
+              messageQueueTimerRef.current = null;
+            }
             setChatMessages([]);
             setSessionMessages([]);
             setClaudeStatus(null);
@@ -4563,16 +4569,34 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
 
   // Process next message in queue when current message completes
   useEffect(() => {
+    // Clear any existing timeout before setting up a new one
+    if (messageQueueTimerRef.current) {
+      clearTimeout(messageQueueTimerRef.current);
+      messageQueueTimerRef.current = null;
+    }
+
     if (!isLoading && messageQueue.length > 0) {
       // Process the next message in queue using functional update
       setMessageQueue(prevQueue => {
         if (prevQueue.length === 0) return prevQueue;
         const nextMessage = prevQueue[0];
         // Use setTimeout to avoid state update during render
-        setTimeout(() => processMessage(nextMessage), 0);
+        // Store the timeout ID so we can clear it on cleanup or abort
+        messageQueueTimerRef.current = setTimeout(() => {
+          messageQueueTimerRef.current = null;
+          processMessage(nextMessage);
+        }, 0);
         return prevQueue.slice(1);
       });
     }
+
+    // Cleanup: clear timeout on unmount or when dependencies change
+    return () => {
+      if (messageQueueTimerRef.current) {
+        clearTimeout(messageQueueTimerRef.current);
+        messageQueueTimerRef.current = null;
+      }
+    };
   }, [isLoading, messageQueue.length, processMessage]);
 
   const handleSubmit = useCallback(async (e) => {
@@ -4920,6 +4944,11 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
 
 
   const handleNewSession = () => {
+    // Clear any pending message queue timeout
+    if (messageQueueTimerRef.current) {
+      clearTimeout(messageQueueTimerRef.current);
+      messageQueueTimerRef.current = null;
+    }
     setChatMessages([]);
     setInput('');
     setIsLoading(false);
@@ -4929,6 +4958,11 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
   
   const handleAbortSession = () => {
     if (currentSessionId && canAbortSession) {
+      // Clear any pending message queue timeout when aborting
+      if (messageQueueTimerRef.current) {
+        clearTimeout(messageQueueTimerRef.current);
+        messageQueueTimerRef.current = null;
+      }
       sendMessage({
         type: 'abort-session',
         sessionId: currentSessionId,
