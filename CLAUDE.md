@@ -41,3 +41,20 @@ Then update the justfile with a new confirmed stable version when ready.
 - Bump patch: `just version-bump`
 - Bump minor: `just version-bump-minor`
 - Create tag: `just version-tag`
+
+## Container Workflow Skill
+
+This project follows the **container-workflow** skill pattern for CI/CD and deployment.
+
+When modifying container-related files (GitHub Actions, Dockerfiles, docker-compose, justfile), reference the `container-workflow` skill located at:
+```
+~/.agents/skills/container-workflow/
+```
+
+The skill defines standards for:
+- GitHub Actions workflow (`docker-build.yml`)
+- Multi-stage Docker builds (`Dockerfile.server`)
+- Docker Compose orchestration (`docker-compose.yml`)
+- Just command automation (container recipes in `justfile`)
+- Version management and tagging
+- Emergency fallback pattern (`just prev-working`)
