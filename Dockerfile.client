@@ -1,6 +1,9 @@
 # Client Dockerfile - Development mode with hot reload
 FROM node:20-alpine
 
+# Use Tsinghua Alpine mirrors for China
+RUN sed -i 's#https\?://dl-cdn.alpinelinux.org/alpine#https://mirrors.tuna.tsinghua.edu.cn/alpine#g' /etc/apk/repositories
+
 # Install build dependencies for native modules
 RUN apk add --no-cache python3 make g++ sqlite-dev
 
