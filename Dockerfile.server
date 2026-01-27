@@ -30,10 +30,10 @@ RUN apk add --no-cache sqlite bash git curl tar wget openssh ca-certificates
 # Install GitHub CLI (gh) from binary release (pinned version)
 ENV GH_VERSION=2.86.0
 RUN cd /tmp && \
-    curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh-linux-amd64.tar.gz" -o gh.tar.gz && \
+    curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz" -o gh.tar.gz && \
     tar -xzf gh.tar.gz && \
-    mv "gh-linux-amd64/bin/gh" /usr/local/bin/ && \
-    rm -rf "gh-linux-amd64" gh.tar.gz && \
+    mv "gh_${GH_VERSION}_linux_amd64/bin/gh" /usr/local/bin/ && \
+    rm -rf "gh_${GH_VERSION}_linux_amd64" gh.tar.gz && \
     chmod +x /usr/local/bin/gh
 
 # Install Claude CLI globally
