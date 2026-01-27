@@ -2,6 +2,18 @@
 import { useState, useEffect } from 'react';
 import { version } from '../../package.json';
 
+// Simple semver comparison (major.minor.patch)
+function isGreaterVersion(latest, current) {
+  const latestParts = latest.split('.').map(n => parseInt(n) || 0);
+  const currentParts = current.split('.').map(n => parseInt(n) || 0);
+
+  for (let i = 0; i < 3; i++) {
+    if (latestParts[i] > currentParts[i]) return true;
+    if (latestParts[i] < currentParts[i]) return false;
+  }
+  return false; // Versions are equal
+}
+
 export const useVersionCheck = (owner, repo) => {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [latestVersion, setLatestVersion] = useState(null);
@@ -17,7 +29,8 @@ export const useVersionCheck = (owner, repo) => {
         if (data.tag_name) {
           const latest = data.tag_name.replace(/^v/, '');
           setLatestVersion(latest);
-          setUpdateAvailable(version !== latest);
+          // Only show update if latest version is greater than current
+          setUpdateAvailable(isGreaterVersion(latest, version));
 
           // Store release information
           setReleaseInfo({
