@@ -25,7 +25,7 @@ RUN npm prune --omit=dev
 FROM node:20-alpine
 
 # Install runtime dependencies
-RUN apk add --no-cache sqlite bash git curl tar wget openssh
+RUN apk add --no-cache sqlite bash git curl tar wget openssh ca-certificates
 
 # Install GitHub CLI (gh) from binary release (pinned version)
 ENV GH_VERSION=2.60.1
