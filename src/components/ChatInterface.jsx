@@ -3992,6 +3992,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
             setIsLoading(false);
             setCanAbortSession(false);
             setClaudeStatus(null);
+            setMessageQueue([]); // Clear message queue when session is aborted
           }
 
           // Always mark the aborted session as inactive and not processing
