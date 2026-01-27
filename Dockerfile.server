@@ -18,8 +18,8 @@ RUN npm ci
 # Copy source files
 COPY . .
 
-# Build frontend (increase file descriptor limit)
-RUN ulimit -n 65536 && npm run build
+# Build frontend
+RUN npm run build
 
 # Clean up dev dependencies to reduce image size
 RUN npm prune --omit=dev

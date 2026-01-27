@@ -44,10 +44,12 @@ start: build
 test:
   npm test
 
-# Build Docker images locally (use GitHub Actions for better compatibility)
+# Build Docker images locally
+# Note: Local build may fail due to file descriptor limits in rootless podman
+# Use GitHub Actions for production builds (push to main branch)
 docker-build:
-  podman build --network=host --ulimit host=1024:65536 -f Dockerfile.server -t ccui-server:local .
-  podman build --network=host --ulimit host=1024:65536 -f Dockerfile.client -t ccui-client:local .
+  podman build --network=host --security-opt seccomp=unconfined -f Dockerfile.server -t ccui-server:local .
+  podman build --network=host --security-opt seccomp=unconfined -f Dockerfile.client -t ccui-client:local .
 
 # Check health status of server and client
 health:
