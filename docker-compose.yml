@@ -9,6 +9,7 @@ services:
     environment:
       - PORT=7853
       - NODE_ENV=production
+      - HOME=/workspace
     volumes:
       - server-data:/app/server/database
       - /mnt/volume3/data:/workspace
