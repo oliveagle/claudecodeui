@@ -1892,6 +1892,8 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
   // These are not persisted and do not survive a page refresh; introduced so
   // the UI can present pending approvals while the SDK waits.
   const [pendingPermissionRequests, setPendingPermissionRequests] = useState([]);
+  // Message queue for sending messages while AI is processing
+  const [messageQueue, setMessageQueue] = useState([]);
   const [attachedImages, setAttachedImages] = useState([]);
   const [uploadingImages, setUploadingImages] = useState(new Map());
   const [imageErrors, setImageErrors] = useState(new Map());
@@ -4406,13 +4408,13 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     noKeyboard: true
   });
 
-  const handleSubmit = useCallback(async (e) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading || !selectedProject) return;
+  // Internal function to process and send a single message
+  const processMessage = useCallback(async (messageData) => {
+    const { content: input, images: attachedImages, thinkingMode: messageThinkingMode } = messageData;
 
     // Apply thinking mode prefix if selected
     let messageContent = input;
-    const selectedThinkingMode = thinkingModes.find(mode => mode.id === thinkingMode);
+    const selectedThinkingMode = thinkingModes.find(mode => mode.id === messageThinkingMode);
     if (selectedThinkingMode && selectedThinkingMode.prefix) {
       messageContent = `${selectedThinkingMode.prefix}: ${input}`;
     }
@@ -4424,18 +4426,18 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
       attachedImages.forEach(file => {
         formData.append('images', file);
       });
-      
+
       try {
         const response = await authenticatedFetch(`/api/projects/${selectedProject.name}/upload-images`, {
           method: 'POST',
           headers: {}, // Let browser set Content-Type for FormData
           body: formData
         });
-        
+
         if (!response.ok) {
           throw new Error('Failed to upload images');
         }
-        
+
         const result = await response.json();
         uploadedImages = result.images;
       } catch (error) {
@@ -4465,7 +4467,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
       tokens: 0,
       can_interrupt: true
     });
-    
+
     // Always scroll to bottom when user sends a message and reset scroll state
     setIsUserScrolledUp(false); // Reset scroll state so auto-scroll works for Claude's response
     setTimeout(() => scrollToBottom(), 100); // Longer delay to ensure message is rendered
@@ -4555,7 +4557,38 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
         }
       });
     }
+  }, [selectedProject, currentSessionId, selectedSession, provider, permissionMode, onSessionActive, cursorModel, claudeModel, codexModel, sendMessage, setChatMessages, setIsLoading, setCanAbortSession, setClaudeStatus, setIsUserScrolledUp, scrollToBottom]);
 
+  // Process next message in queue when current message completes
+  useEffect(() => {
+    if (!isLoading && messageQueue.length > 0) {
+      // Process the next message in queue
+      const nextMessage = messageQueue[0];
+      setMessageQueue(prev => prev.slice(1)); // Remove from queue
+      processMessage(nextMessage);
+    }
+  }, [isLoading, messageQueue, processMessage]);
+
+  const handleSubmit = useCallback(async (e) => {
+    e.preventDefault();
+    if (!input.trim() || !selectedProject) return;
+
+    // Prepare message data
+    const messageData = {
+      content: input,
+      images: attachedImages,
+      thinkingMode: thinkingMode
+    };
+
+    // If currently loading, add to queue instead of sending immediately
+    if (isLoading) {
+      setMessageQueue(prev => [...prev, messageData]);
+    } else {
+      // Send immediately if not loading
+      await processMessage(messageData);
+    }
+
+    // Clear input and reset state
     setInput('');
     setAttachedImages([]);
     setUploadingImages(new Map());
@@ -4572,7 +4605,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     if (selectedProject) {
       safeLocalStorage.removeItem(`draft_input_${selectedProject.name}`);
     }
-  }, [input, isLoading, selectedProject, attachedImages, currentSessionId, selectedSession, provider, permissionMode, onSessionActive, cursorModel, claudeModel, codexModel, sendMessage, setInput, setAttachedImages, setUploadingImages, setImageErrors, setIsTextareaExpanded, textareaRef, setChatMessages, setIsLoading, setCanAbortSession, setClaudeStatus, setIsUserScrolledUp, scrollToBottom, thinkingMode]);
+  }, [input, isLoading, selectedProject, attachedImages, thinkingMode, processMessage, setInput, setAttachedImages, setUploadingImages, setImageErrors, setIsTextareaExpanded, textareaRef]);
 
   const handleGrantToolPermission = useCallback((suggestion) => {
     if (!suggestion || provider !== 'claude') {
@@ -5525,7 +5558,48 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
               </div>
             </div>
           )}
-          
+
+          {/* Message queue preview */}
+          {messageQueue.length > 0 && (
+            <div className="mb-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 text-sm font-medium text-blue-700 dark:text-blue-300">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{t('messageQueue.title', { count: messageQueue.length })}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMessageQueue([])}
+                  className="text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium"
+                >
+                  {t('messageQueue.clearAll')}
+                </button>
+              </div>
+              <div className="space-y-1 max-h-24 overflow-y-auto">
+                {messageQueue.map((msg, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded px-2 py-1"
+                  >
+                    <span className="text-gray-400 dark:text-gray-500 text-xs">{index + 1}.</span>
+                    <span className="flex-1 truncate">{msg.content}</span>
+                    <button
+                      type="button"
+                      onClick={() => setMessageQueue(prev => prev.filter((_, i) => i !== index))}
+                      className="text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* File dropdown - positioned outside dropzone to avoid conflicts */}
           {showFileDropdown && filteredFiles.length > 0 && (
             <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50 backdrop-blur-sm">
@@ -5643,33 +5717,42 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
             </div>
 
             {/* Send button */}
-            <button
-              type="submit"
-              disabled={!input.trim() || isLoading}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                handleSubmit(e);
-              }}
-              onTouchStart={(e) => {
-                e.preventDefault();
-                handleSubmit(e);
-              }}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 w-12 h-12 sm:w-12 sm:h-12 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed rounded-full flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:ring-offset-gray-800"
-            >
-              <svg 
-                className="w-4 h-4 sm:w-5 sm:h-5 text-white transform rotate-90" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+              <button
+                type="submit"
+                disabled={!input.trim()}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  handleSubmit(e);
+                }}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  handleSubmit(e);
+                }}
+                className="w-12 h-12 sm:w-12 sm:h-12 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed rounded-full flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:ring-offset-gray-800"
               >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" 
-                />
-              </svg>
-            </button>
+                <svg
+                  className="w-4 h-4 sm:w-5 sm:h-5 text-white transform rotate-90"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                  />
+                </svg>
+              </button>
+
+              {/* Message queue indicator */}
+              {messageQueue.length > 0 && (
+                <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-lg">
+                  {messageQueue.length}
+                </div>
+              )}
+            </div>
 
             {/* Hint text inside input box at bottom - Desktop only */}
             <div className={`absolute bottom-1 left-12 right-14 sm:right-40 text-xs text-gray-400 dark:text-gray-500 pointer-events-none hidden sm:block transition-opacity duration-200 ${

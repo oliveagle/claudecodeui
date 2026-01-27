@@ -108,6 +108,11 @@
     "clickToChangeMode": "点击更改权限模式（或在输入框中按 Tab）",
     "showAllCommands": "显示所有命令"
   },
+  "messageQueue": {
+    "title": "队列中有 {{count}} 条消息",
+    "title_plural": "队列中有 {{count}} 条消息",
+    "clearAll": "清除全部"
+  },
   "thinkingMode": {
     "selector": {
       "title": "思考模式",

@@ -108,6 +108,11 @@
     "clickToChangeMode": "Click to change permission mode (or press Tab in input)",
     "showAllCommands": "Show all commands"
   },
+  "messageQueue": {
+    "title": "{{count}} message in queue",
+    "title_plural": "{{count}} messages in queue",
+    "clearAll": "Clear all"
+  },
   "thinkingMode": {
     "selector": {
       "title": "Thinking Mode",
