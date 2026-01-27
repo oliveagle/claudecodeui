@@ -25,7 +25,7 @@ RUN npm prune --omit=dev
 FROM node:20-alpine
 
 # Install runtime dependencies
-RUN apk add --no-cache sqlite bash
+RUN apk add --no-cache sqlite bash git
 
 # Install Claude CLI globally
 RUN npm install -g @anthropic-ai/claude-code
