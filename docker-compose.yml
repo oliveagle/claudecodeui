@@ -10,6 +10,9 @@ services:
       - PORT=7853
       - NODE_ENV=production
       - HOME=/workspace
+      - ANTHROPIC_AUTH_TOKEN=${ANTHROPIC_AUTH_TOKEN}
+      - ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL}
+      - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-GLM-4.7}
     volumes:
       - server-data:/app/server/database
       - /mnt/volume3/data:/workspace
