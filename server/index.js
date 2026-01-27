@@ -916,7 +916,20 @@ function handleShellConnection(ws) {
             console.log('📨 Shell message received:', data.type);
 
             if (data.type === 'init') {
-                const projectPath = data.projectPath || process.cwd();
+                let projectPath = data.projectPath || process.cwd();
+
+                // Validate projectPath exists, otherwise fall back to workspace or home
+                if (!fs.existsSync(projectPath)) {
+                    console.warn(`⚠️  Project path does not exist: ${projectPath}`);
+                    const workspacePath = process.env.HOME || process.cwd();
+                    if (fs.existsSync(workspacePath)) {
+                        projectPath = workspacePath;
+                        console.log(`✓ Falling back to workspace: ${projectPath}`);
+                    } else {
+                        projectPath = process.cwd();
+                        console.log(`✓ Falling back to cwd: ${projectPath}`);
+                    }
+                }
                 const sessionId = data.sessionId;
                 const hasSession = data.hasSession;
                 const provider = data.provider || 'claude';
