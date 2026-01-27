@@ -11,6 +11,7 @@ services:
       - NODE_ENV=production
     volumes:
       - server-data:/app/server/database
+      - /mnt/volume3/data:/workspace
     restart: unless-stopped
 
   client:
