@@ -1,0 +1,30 @@
+# Use images built from GitHub Actions
+# After pushing to GitHub, images will be available at ghcr.io/oliveagle/claudecodeui/*
+services:
+  server:
+    image: ghcr.io/oliveagle/claudecodeui/ccui-server:latest
+    container_name: ccui-server
+    ports:
+      - "7853:7853"
+    environment:
+      - PORT=7853
+      - NODE_ENV=production
+    volumes:
+      - server-data:/app/server/database
+    restart: unless-stopped
+
+  client:
+    image: ghcr.io/oliveagle/claudecodeui/ccui-client:latest
+    container_name: ccui-client
+    ports:
+      - "5174:5174"
+    environment:
+      - VITE_PORT=5174
+      - PORT=7853
+    depends_on:
+      - server
+    restart: unless-stopped
+
+volumes:
+  server-data:
+    driver: local

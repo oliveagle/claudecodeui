@@ -1,0 +1,44 @@
+# Development mode - separate server and client with hot reload
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: ccui-server-dev
+    ports:
+      - "7853:7853"
+    environment:
+      - PORT=7853
+      - NODE_ENV=development
+    volumes:
+      # Mount source for hot reload (not recommended for production)
+      - ./server:/app/server
+      - ./shared:/app/shared
+      - server-data:/app/server/database
+    command: ["node", "server/index.js"]
+    restart: unless-stopped
+
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: ccui-client-dev
+    ports:
+      - "5174:5174"
+    environment:
+      - VITE_PORT=5174
+      - PORT=7853
+    volumes:
+      # Mount source for hot reload
+      - ./src:/app/src
+      - ./index.html:/app/index.html
+      - ./vite.config.js:/app/vite.config.js
+      - ./tailwind.config.js:/app/tailwind.config.js
+      - ./postcss.config.js:/app/postcss.config.js
+    depends_on:
+      - server
+    restart: unless-stopped
+
+volumes:
+  server-data:
+    driver: local

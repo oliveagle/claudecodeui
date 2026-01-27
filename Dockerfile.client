@@ -1,0 +1,22 @@
+# Client Dockerfile - Development mode with hot reload
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source files
+COPY . .
+
+# Set environment variables
+ENV VITE_PORT=5174
+ENV PORT=7853
+ENV NODE_ENV=development
+
+EXPOSE 5174
+
+CMD ["npx", "vite", "--host", "0.0.0.0"]
