@@ -25,7 +25,11 @@ RUN npm prune --omit=dev
 FROM node:20-alpine
 
 # Install runtime dependencies
-RUN apk add --no-cache sqlite bash git gh
+RUN apk add --no-cache sqlite bash git curl
+
+# Install GitHub CLI (gh) from binary release
+RUN curl -L -o /usr/local/bin/gh https://github.com/cli/cli/releases/latest/download/gh-linux-amd64 && \
+    chmod +x /usr/local/bin/gh
 
 # Install Claude CLI globally
 RUN npm install -g @anthropic-ai/claude-code
