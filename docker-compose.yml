@@ -22,6 +22,7 @@ services:
       - /mnt/volume3/data:/workspace
       - ~/.claude:/workspace/.claude
       - ~/.ssh:/workspace/.ssh:ro
+      - ~/.gitconfig:/workspace/.gitconfig:ro
     restart: unless-stopped
 
 volumes:
