@@ -3,15 +3,22 @@
 ## Development Commands
 
 ### Standard Commands
-- `just dev` - Start dev server on port 7853
+- `just dev` - Start dev server on port 7853 (node directly)
 - `just build` - Build for production
 - `just docker-build` - Build Docker image locally
 - `just health` - Check health status
 - `just version` - Show current version
 
-### Emergency Recovery Command
+### Production Deployment Commands (podman compose)
 
-**`just prev-working`** - MANUALLY MAINTAINED fallback command
+**`just up`** - Start production service
+- Runs on **port 7853**
+- Uses **latest** image from ghcr.io
+- Main production service
+
+**`just down`** - Stop production service
+
+**`just prev-working`** - Emergency fallback (MANUALLY MAINTAINED)
 
 This command is intended for **extreme cases only** when the latest version has critical issues and service availability must be guaranteed.
 
