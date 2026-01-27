@@ -29,6 +29,7 @@ services:
       - ~/.ssh/known_hosts:/root/.ssh/known_hosts:ro
       - ~/.gitconfig:/workspace/.gitconfig:ro
       - ~/.config/gh:/workspace/.config/gh
+      - ~/.agents:/workspace/.agents
     restart: unless-stopped
 
 volumes:
