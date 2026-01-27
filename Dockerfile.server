@@ -36,9 +36,8 @@ RUN cd /tmp && \
     rm -rf "gh_${GH_VERSION}_linux_amd64" gh.tar.gz && \
     chmod +x /usr/local/bin/gh
 
-# Install Claude CLI using binary
-RUN curl -fsSL https://storage.googleapis.com/anthropic-claude-code/latest/linux-amd64/claude -o /usr/local/bin/claude && \
-    chmod +x /usr/local/bin/claude
+# Install Claude CLI globally
+RUN npm install -g @anthropic-ai/claude-code
 
 WORKDIR /app
 

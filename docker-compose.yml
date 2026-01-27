@@ -21,7 +21,12 @@ services:
       - server-data:/app/server/database
       - /mnt/volume3/data:/workspace
       - ~/.claude:/workspace/.claude
-      - ~/.ssh:/workspace/.ssh:ro
+      - ~/.ssh/id_rsa:/workspace/.ssh/id_rsa:ro
+      - ~/.ssh/id_rsa.pub:/workspace/.ssh/id_rsa.pub:ro
+      - ~/.ssh/known_hosts:/workspace/.ssh/known_hosts
+      - ~/.ssh/id_rsa:/root/.ssh/id_rsa:ro
+      - ~/.ssh/id_rsa.pub:/root/.ssh/id_rsa.pub:ro
+      - ~/.ssh/known_hosts:/root/.ssh/known_hosts:ro
       - ~/.gitconfig:/workspace/.gitconfig:ro
       - ~/.config/gh:/workspace/.config/gh
     restart: unless-stopped

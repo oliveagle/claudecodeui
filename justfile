@@ -91,3 +91,38 @@ health:
 
   echo ""
   echo "==================="
+
+# Show current version
+version:
+  @cat VERSION
+
+# Bump patch version (1.0.0 -> 1.0.1)
+version-bump:
+  #!/bin/bash
+  current=$(cat VERSION)
+  IFS='.' read -r major minor patch <<< "$current"
+  patch=$((patch + 1))
+  new="${major}.${minor}.${patch}"
+  echo "$new" > VERSION
+  node -e "const p=require('./package.json');p.version='$new';fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
+  echo "Bumped version: $current -> $new"
+
+# Bump minor version (1.0.1 -> 1.1.0)
+version-bump-minor:
+  #!/bin/bash
+  current=$(cat VERSION)
+  IFS='.' read -r major minor patch <<< "$current"
+  minor=$((minor + 1))
+  patch=0
+  new="${major}.${minor}.${patch}"
+  echo "$new" > VERSION
+  node -e "const p=require('./package.json');p.version='$new';fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
+  echo "Bumped version: $current -> $new"
+
+# Create git tag for current version
+version-tag:
+  #!/bin/bash
+  v=$(cat VERSION)
+  git tag -a "v$v" -m "Release v$v"
+  git push fork "v$v"
+  echo "Created and pushed tag: v$v"

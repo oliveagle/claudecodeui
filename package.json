@@ -1,6 +1,6 @@
 {
-  "name": "@siteboon/claude-code-ui",
-  "version": "1.14.0",
+  "name": "@oliveagle/claude-code-ui",
+  "version": "1.0.0",
   "description": "A web-based UI for Claude Code CLI",
   "type": "module",
   "main": "server/index.js",
@@ -29,7 +29,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "start": "npm run build && npm run server",
-    "release": "./release.sh"
+    "release": "./release.sh",
+    "version": "node -e \"console.log(require('./package.json').version)\"",
+    "version:bump": "node -e \"const fs=require('fs');const p=require('./package.json');const v=p.version.split('.').map(n=>parseInt(n));v[2]++;p.version=v.join('.');fs.writeFileSync('package.json',JSON.stringify(p,null,2));fs.writeFileSync('VERSION',p.version);console.log('Bumped to',p.version)\""
   },
   "keywords": [
     "claude coode",
