@@ -28,7 +28,7 @@ FROM node:20-alpine
 RUN apk add --no-cache sqlite bash git curl tar wget openssh ca-certificates
 
 # Install GitHub CLI (gh) from binary release (pinned version)
-ENV GH_VERSION=2.60.1
+ENV GH_VERSION=2.86.0
 RUN cd /tmp && \
     curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh-linux-amd64.tar.gz" -o gh.tar.gz && \
     tar -xzf gh.tar.gz && \
