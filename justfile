@@ -10,8 +10,8 @@ dev:
   #!/bin/bash
   pkill -f "node server/index.js" 2>/dev/null
   sleep 1
-  PORT=7853 nohup npm run server > /tmp/server.log 2>&1 &
-  echo "Dev server started on port 7853"
+  echo "Starting dev server on port 7853..."
+  PORT=7853 npm run server
 
 # Start server (alias for dev)
 server: dev
