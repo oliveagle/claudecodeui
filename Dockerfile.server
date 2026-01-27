@@ -25,10 +25,15 @@ RUN npm prune --omit=dev
 FROM node:20-alpine
 
 # Install runtime dependencies
-RUN apk add --no-cache sqlite bash git curl
+RUN apk add --no-cache sqlite bash git curl tar
 
 # Install GitHub CLI (gh) from binary release
-RUN curl -L -o /usr/local/bin/gh https://github.com/cli/cli/releases/latest/download/gh-linux-amd64 && \
+RUN ARCH=$(uname -m) && \
+    mkdir -p /tmp/gh && \
+    curl -L -o /tmp/gh/gh.tar.gz "https://github.com/cli/cli/releases/latest/download/gh-linux-${ARCH}.tar.gz" && \
+    tar -xzC /tmp/gh -f /tmp/gh/gh.tar.gz && \
+    mv /tmp/gh/gh-linux-${ARCH}/bin/gh /usr/local/bin/gh && \
+    rm -rf /tmp/gh && \
     chmod +x /usr/local/bin/gh
 
 # Install Claude CLI globally
