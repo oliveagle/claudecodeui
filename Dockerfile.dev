@@ -1,13 +1,8 @@
 # Development Dockerfile - For running server with source mounting
-FROM node:20
+FROM node:20-alpine
 
 # Install build dependencies for native modules (sqlite3)
-RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    libsqlite3-dev \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache python3 make g++ sqlite-dev
 
 WORKDIR /app
 
