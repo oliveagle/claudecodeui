@@ -36,8 +36,8 @@ RUN cd /tmp && \
     rm -rf "gh_${GH_VERSION}_linux_amd64" gh.tar.gz && \
     chmod +x /usr/local/bin/gh
 
-# Install Claude CLI globally
-RUN npm install -g @anthropic-ai/claude-code
+# Install Claude CLI using native installer
+RUN curl -fsSL https://claude.ai/install.sh | sh
 
 WORKDIR /app
 
