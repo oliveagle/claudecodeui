@@ -420,15 +420,43 @@ async function getProjects(progressCallback = null) {
         }
 
         const projectPath = path.join(claudeDir, entry.name);
-        
+
         // Extract actual project directory from JSONL sessions
         const actualProjectDir = await extractProjectDirectory(entry.name);
-        
+
+        // Check if the project path exists in the container filesystem
+        // This filters out projects from host that don't exist in container
+        let pathExists = false;
+        try {
+          await fs.access(actualProjectDir);
+          pathExists = true;
+        } catch (error) {
+          if (error.code === 'ENOENT') {
+            console.log(`Project path does not exist in container, skipping: ${actualProjectDir}`);
+            continue; // Skip this project
+          }
+          // For other errors, log but continue
+          console.warn(`Error checking project path ${actualProjectDir}:`, error.message);
+          continue;
+        }
+
+        // Filter to only show projects under /workspace (the mounted volume)
+        // This prevents showing projects from the host's full filesystem
+        const workspaceDir = process.env.HOME || '/workspace';
+        const resolvedProjectDir = path.resolve(actualProjectDir);
+        const resolvedWorkspaceDir = path.resolve(workspaceDir);
+
+        if (!resolvedProjectDir.startsWith(resolvedWorkspaceDir + path.sep) &&
+            resolvedProjectDir !== resolvedWorkspaceDir) {
+          console.log(`Project path is outside /workspace, skipping: ${actualProjectDir}`);
+          continue;
+        }
+
         // Get display name from config or generate one
         const customName = config[entry.name]?.displayName;
         const autoDisplayName = await generateDisplayName(entry.name, actualProjectDir);
         const fullPath = actualProjectDir;
-        
+
         const project = {
           name: entry.name,
           path: actualProjectDir,
@@ -437,7 +465,7 @@ async function getProjects(progressCallback = null) {
           isCustomName: !!customName,
           sessions: []
         };
-        
+
         // Try to get sessions for this project (just first 5 for performance)
         try {
           const sessionResult = await getSessions(entry.name, 5, 0);
@@ -449,7 +477,7 @@ async function getProjects(progressCallback = null) {
         } catch (e) {
           console.warn(`Could not load sessions for project ${entry.name}:`, e.message);
         }
-        
+
         // Also fetch Cursor sessions for this project
         try {
           project.cursorSessions = await getCursorSessions(actualProjectDir);
@@ -515,7 +543,7 @@ async function getProjects(progressCallback = null) {
 
       // Use the original path if available, otherwise extract from potential sessions
       let actualProjectDir = projectConfig.originalPath;
-      
+
       if (!actualProjectDir) {
         try {
           actualProjectDir = await extractProjectDirectory(projectName);
@@ -524,8 +552,22 @@ async function getProjects(progressCallback = null) {
           actualProjectDir = projectName.replace(/-/g, '/');
         }
       }
-      
-              const project = {
+
+      // Check if the project path exists in the container filesystem
+      // This filters out projects from host that don't exist in container
+      try {
+        await fs.access(actualProjectDir);
+      } catch (error) {
+        if (error.code === 'ENOENT') {
+          console.log(`Manual project path does not exist in container, skipping: ${actualProjectDir}`);
+          continue; // Skip this project
+        }
+        // For other errors, log but continue
+        console.warn(`Error checking manual project path ${actualProjectDir}:`, error.message);
+        continue;
+      }
+
+      const project = {
           name: projectName,
           path: actualProjectDir,
           displayName: projectConfig.displayName || await generateDisplayName(projectName, actualProjectDir),
@@ -554,13 +596,13 @@ async function getProjects(progressCallback = null) {
       // Add TaskMaster detection for manual projects
       try {
         const taskMasterResult = await detectTaskMasterFolder(actualProjectDir);
-        
+
         // Determine TaskMaster status
         let taskMasterStatus = 'not-configured';
         if (taskMasterResult.hasTaskmaster && taskMasterResult.hasEssentialFiles) {
           taskMasterStatus = 'taskmaster-only'; // We don't check MCP for manual projects in bulk
         }
-        
+
         project.taskmaster = {
           status: taskMasterStatus,
           hasTaskmaster: taskMasterResult.hasTaskmaster,
@@ -576,7 +618,7 @@ async function getProjects(progressCallback = null) {
           error: error.message
         };
       }
-      
+
       projects.push(project);
     }
   }
