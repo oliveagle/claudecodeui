@@ -5,32 +5,16 @@ default:
 install:
   npm install
 
-# Start dev mode (server + client)
+# Start dev server
 dev:
   #!/bin/bash
   pkill -f "node server/index.js" 2>/dev/null
-  pkill -f "vite" 2>/dev/null
   sleep 1
   PORT=7853 nohup npm run server > /tmp/server.log 2>&1 &
-  sleep 2
-  (export VITE_PORT=5174 && export PORT=7853 && nohup npx vite --host > /tmp/client.log 2>&1 &)
-  echo "Server and Client started"
+  echo "Dev server started on port 7853"
 
-# Start only client in background
-client:
-  #!/bin/bash
-  pkill -f "vite" 2>/dev/null
-  sleep 1
-  (export VITE_PORT=5174 && export PORT=7853 && nohup npx vite --host > /tmp/client.log 2>&1 &)
-  echo "Client started on port 5174"
-
-# Start only server
-server:
-  #!/bin/bash
-  pkill -f "node server/index.js" 2>/dev/null
-  sleep 1
-  PORT=7853 nohup npm run server > /tmp/server.log 2>&1 &
-  echo "Server started on port 7853"
+# Start server (alias for dev)
+server: dev
 
 # Build for production
 build:
@@ -44,12 +28,11 @@ start: build
 test:
   npm test
 
-# Build Docker images locally using Tsinghua mirrors
+# Build Docker image locally
 docker-build:
-  podman build --network=host --ulimit nofile=262144:262144 -f Dockerfile.server.local -t ccui-server:local .
-  podman build --network=host --ulimit nofile=262144:262144 -f Dockerfile.client.local -t ccui-client:local .
+  podman build --network=host --ulimit nofile=262144:262144 -f Dockerfile.server -t ccui-server:local .
 
-# Check health status of server and client
+# Check health status
 health:
   #!/bin/bash
   echo "=== Health Check ==="
@@ -69,24 +52,6 @@ health:
     echo "✓ Server port 7853: LISTENING"
   else
     echo "✗ Server port 7853: NOT LISTENING"
-  fi
-
-  echo ""
-
-  # Check client process
-  if pgrep -f "vite" > /dev/null; then
-    echo "✓ Client process: RUNNING"
-    CLIENT_PID=$(pgrep -f "vite" | head -1)
-    echo "  PID: $CLIENT_PID"
-  else
-    echo "✗ Client process: NOT RUNNING"
-  fi
-
-  # Check client port
-  if lsof -i :5174 > /dev/null 2>&1; then
-    echo "✓ Client port 5174: LISTENING"
-  else
-    echo "✗ Client port 5174: NOT LISTENING"
   fi
 
   echo ""
