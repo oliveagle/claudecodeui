@@ -1,4 +1,4 @@
-# Use images built from GitHub Actions
+# Production Docker Compose - Server only (serves both API and static frontend)
 # After pushing to GitHub, images will be available at ghcr.io/oliveagle/claudecodeui/*
 services:
   server:
@@ -16,19 +16,7 @@ services:
     volumes:
       - server-data:/app/server/database
       - /mnt/volume3/data:/workspace
-      - ~/.claude:/root/.claude:ro
-    restart: unless-stopped
-
-  client:
-    image: ghcr.io/oliveagle/claudecodeui/ccui-client:latest
-    container_name: ccui-client
-    ports:
-      - "5174:5174"
-    environment:
-      - VITE_PORT=5174
-      - PORT=7853
-    depends_on:
-      - server
+      - ~/.claude:/workspace/.claude
     restart: unless-stopped
 
 volumes:
