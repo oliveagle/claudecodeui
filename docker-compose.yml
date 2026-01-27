@@ -21,7 +21,7 @@ services:
       - server-data:/app/server/database
       - /mnt/volume3/data:/workspace
       - ~/.claude:/workspace/.claude
-      - ~/.ssh:/workspace/.ssh
+      - ~/.ssh:/workspace/.ssh:ro
     restart: unless-stopped
 
 volumes:
