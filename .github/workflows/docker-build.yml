@@ -51,6 +51,9 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable={{is_default_branch}}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build and push server image
         uses: docker/build-push-action@v5
         with:
@@ -59,8 +62,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/ccui-server:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/ccui-server:buildcache,mode=max
 
   build-client:
     runs-on: ubuntu-latest
@@ -96,6 +99,9 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable={{is_default_branch}}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build and push client image
         uses: docker/build-push-action@v5
         with:
@@ -104,5 +110,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/ccui-client:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/ccui-client:buildcache,mode=max
