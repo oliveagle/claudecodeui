@@ -3040,6 +3040,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
             setSessionMessages([]);
             setClaudeStatus(null);
             setCanAbortSession(false);
+            setMessageQueue([]); // Clear message queue when switching sessions
           }
           // Reset pagination state when switching sessions
           setMessagesOffset(0);
@@ -4562,12 +4563,16 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
   // Process next message in queue when current message completes
   useEffect(() => {
     if (!isLoading && messageQueue.length > 0) {
-      // Process the next message in queue
-      const nextMessage = messageQueue[0];
-      setMessageQueue(prev => prev.slice(1)); // Remove from queue
-      processMessage(nextMessage);
+      // Process the next message in queue using functional update
+      setMessageQueue(prevQueue => {
+        if (prevQueue.length === 0) return prevQueue;
+        const nextMessage = prevQueue[0];
+        // Use setTimeout to avoid state update during render
+        setTimeout(() => processMessage(nextMessage), 0);
+        return prevQueue.slice(1);
+      });
     }
-  }, [isLoading, messageQueue, processMessage]);
+  }, [isLoading, messageQueue.length, processMessage]);
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
@@ -4918,6 +4923,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     setInput('');
     setIsLoading(false);
     setCanAbortSession(false);
+    setMessageQueue([]); // Clear message queue when starting new session
   };
   
   const handleAbortSession = () => {

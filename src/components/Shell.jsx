@@ -290,14 +290,16 @@ function Shell({ selectedProject, selectedSession, initialCommand, isPlainShell 
       }
 
       if ((event.ctrlKey || event.metaKey) && event.key === 'v') {
-        navigator.clipboard.readText().then(text => {
-          if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-            ws.current.send(JSON.stringify({
-              type: 'input',
-              data: text
-            }));
-          }
-        }).catch(() => {});
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          navigator.clipboard.readText().then(text => {
+            if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+              ws.current.send(JSON.stringify({
+                type: 'input',
+                data: text
+              }));
+            }
+          }).catch(() => {});
+        }
         return false;
       }
 
