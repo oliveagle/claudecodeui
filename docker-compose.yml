@@ -13,6 +13,7 @@ services:
     volumes:
       - server-data:/app/server/database
       - /mnt/volume3/data:/workspace
+      - ~/.claude:/root/.claude:ro
     restart: unless-stopped
 
   client:
