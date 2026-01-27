@@ -1731,7 +1731,7 @@ async function getFileTree(dirPath, maxDepth = 3, currentDepth = 0, showHidden =
     });
 }
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 7451;
 
 // Initialize database and start server
 async function startServer() {
