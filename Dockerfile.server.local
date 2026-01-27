@@ -1,8 +1,11 @@
-# Server Dockerfile - Production build with static frontend
+# Server Dockerfile - Production build with static frontend (Local build with Tsinghua mirrors)
 FROM node:20-alpine AS builder
 
+# Use Tsinghua Alpine mirrors for China
+RUN sed -i 's#https\?://dl-cdn.alpinelinux.org/alpine#https://mirrors.tuna.tsinghua.edu.cn/alpine#g' /etc/apk/repositories
+
 # Install build dependencies for native modules
-RUN apk add --no-cache python3 make g++ sqlite-dev
+RUN apk update && apk add --no-cache python3 make g++ sqlite-dev
 
 WORKDIR /app
 
@@ -24,8 +27,11 @@ RUN npm prune --omit=dev
 # Production stage
 FROM node:20-alpine
 
+# Use Tsinghua Alpine mirrors for China
+RUN sed -i 's#https\?://dl-cdn.alpinelinux.org/alpine#https://mirrors.tuna.tsinghua.edu.cn/alpine#g' /etc/apk/repositories
+
 # Install runtime dependencies
-RUN apk add --no-cache sqlite bash
+RUN apk update && apk add --no-cache sqlite bash
 
 WORKDIR /app
 

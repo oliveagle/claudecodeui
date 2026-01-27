@@ -44,12 +44,10 @@ start: build
 test:
   npm test
 
-# Build Docker images locally
-# Note: Local build may fail due to file descriptor limits in rootless podman
-# Use GitHub Actions for production builds (push to main branch)
+# Build Docker images locally using Tsinghua mirrors
 docker-build:
-  podman build --network=host --security-opt seccomp=unconfined -f Dockerfile.server -t ccui-server:local .
-  podman build --network=host --security-opt seccomp=unconfined -f Dockerfile.client -t ccui-client:local .
+  podman build --network=host --security-opt seccomp=unconfined -f Dockerfile.server.local -t ccui-server:local .
+  podman build --network=host --security-opt seccomp=unconfined -f Dockerfile.client.local -t ccui-client:local .
 
 # Check health status of server and client
 health:
