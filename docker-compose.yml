@@ -23,6 +23,7 @@ services:
       - ~/.claude:/workspace/.claude
       - ~/.ssh:/workspace/.ssh:ro
       - ~/.gitconfig:/workspace/.gitconfig:ro
+      - ~/.config/gh:/workspace/.config/gh
     restart: unless-stopped
 
 volumes:
