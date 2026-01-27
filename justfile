@@ -44,6 +44,11 @@ start: build
 test:
   npm test
 
+# Build Docker images locally (use GitHub Actions for better compatibility)
+docker-build:
+  podman build --network=host --ulimit host=1024:65536 -f Dockerfile.server -t ccui-server:local .
+  podman build --network=host --ulimit host=1024:65536 -f Dockerfile.client -t ccui-client:local .
+
 # Check health status of server and client
 health:
   #!/bin/bash
