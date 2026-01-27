@@ -46,8 +46,8 @@ test:
 
 # Build Docker images locally using Tsinghua mirrors
 docker-build:
-  podman build --network=host --security-opt seccomp=unconfined -f Dockerfile.server.local -t ccui-server:local .
-  podman build --network=host --security-opt seccomp=unconfined -f Dockerfile.client.local -t ccui-client:local .
+  podman build --network=host --ulimit nofile=262144:262144 -f Dockerfile.server.local -t ccui-server:local .
+  podman build --network=host --ulimit nofile=262144:262144 -f Dockerfile.client.local -t ccui-client:local .
 
 # Check health status of server and client
 health:
