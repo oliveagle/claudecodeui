@@ -53,6 +53,10 @@ COPY --from=builder /app/node_modules ./node_modules
 # Create database directory
 RUN mkdir -p /app/server/database
 
+# Create symlink for host user home (for plugins compatibility)
+# Container uses /workspace as HOME, but plugins reference /home/oliveagle
+RUN mkdir -p /home && ln -sf /workspace /home/oliveagle
+
 ENV PORT=7853
 ENV NODE_ENV=production
 
