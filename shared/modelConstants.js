@@ -20,7 +20,7 @@ export const CLAUDE_MODELS = {
     { value: 'sonnet[1m]', label: 'Sonnet [1M]' }
   ],
 
-  DEFAULT: 'sonnet'
+  DEFAULT: 'GLM-4.7'
 };
 
 /**
