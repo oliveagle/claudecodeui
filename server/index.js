@@ -961,6 +961,7 @@ function handleShellConnection(ws) {
                 }
 
                 const existingSession = isLoginCommand ? null : ptySessionsMap.get(ptySessionKey);
+                console.log('[DEBUG] Checking for existing session:', ptySessionKey, 'found:', !!existingSession);
                 if (existingSession) {
                     console.log('♻️  Reconnecting to existing PTY session:', ptySessionKey);
                     shellProcess = existingSession.pty;
@@ -984,6 +985,7 @@ function handleShellConnection(ws) {
 
                     existingSession.ws = ws;
 
+                    console.log('[DEBUG] Reconnection complete, returning early');
                     return;
                 }
 
@@ -1064,6 +1066,9 @@ function handleShellConnection(ws) {
                     const termCols = data.cols || 80;
                     const termRows = data.rows || 24;
                     console.log('📐 Using terminal dimensions:', termCols, 'x', termRows);
+
+                    console.log('[DEBUG] About to spawn PTY with shell:', shell, 'args:', shellArgs);
+                    console.log('[DEBUG] Working directory (cwd):', os.homedir());
 
                     shellProcess = pty.spawn(shell, shellArgs, {
                         name: 'xterm-256color',

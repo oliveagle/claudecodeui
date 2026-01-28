@@ -442,12 +442,33 @@ async function getProjects(progressCallback = null) {
 
         // Filter to only show projects under /workspace (the mounted volume)
         // This prevents showing projects from the host's full filesystem
+        // Use realpath to resolve symlinks (e.g., /mnt/volume3/data -> /workspace)
         const workspaceDir = process.env.HOME || '/workspace';
         const resolvedProjectDir = path.resolve(actualProjectDir);
         const resolvedWorkspaceDir = path.resolve(workspaceDir);
 
-        if (!resolvedProjectDir.startsWith(resolvedWorkspaceDir + path.sep) &&
-            resolvedProjectDir !== resolvedWorkspaceDir) {
+        // Resolve symlinks for both paths to get the actual location
+        let realProjectDir = resolvedProjectDir;
+        let realWorkspaceDir = resolvedWorkspaceDir;
+        try {
+          realProjectDir = await fs.realpath(actualProjectDir);
+        } catch (e) {
+          // If realpath fails, use the resolved path
+        }
+        try {
+          realWorkspaceDir = await fs.realpath(workspaceDir);
+        } catch (e) {
+          // If realpath fails, use the resolved path
+        }
+
+        // Check both the original resolved path and the realpath (for symlink compatibility)
+        const isUnderWorkspace =
+          resolvedProjectDir.startsWith(resolvedWorkspaceDir + path.sep) ||
+          resolvedProjectDir === resolvedWorkspaceDir ||
+          realProjectDir.startsWith(realWorkspaceDir + path.sep) ||
+          realProjectDir === realWorkspaceDir;
+
+        if (!isUnderWorkspace) {
           console.log(`Project path is outside /workspace, skipping: ${actualProjectDir}`);
           continue;
         }
