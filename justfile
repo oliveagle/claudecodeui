@@ -28,9 +28,61 @@ start: build
 test:
   npm test
 
-# Build Docker image locally
+# Build frontend only (server images must be built via GitHub Actions)
 docker-build:
-  podman build --network=host --ulimit nofile=262144:262144 -f Dockerfile.server -t ccui-server:local .
+  npm run build
+
+# Build and run frontend-only container (fast, for frontend development)
+docker-frontend:
+  #!/bin/bash
+  echo "Building frontend-only image..."
+  podman build -f Dockerfile.frontend -t ccui-frontend:local .
+  echo "Starting frontend on http://localhost:3000"
+  podman run -d --rm -p 3000:80 --name ccui-frontend ccui-frontend:local
+
+# Stop frontend container
+docker-frontend-stop:
+  podman stop ccui-frontend 2>/dev/null || true
+
+# Pull and use pre-built server image from GitHub (required - local builds don't work)
+docker-pull version="latest":
+  #!/bin/bash
+  echo "Pulling pre-built server image from GitHub (local builds have compatibility issues)..."
+  podman pull ghcr.io/oliveagle/claudecodeui/ccui-server:{{version}}
+  podman tag ghcr.io/oliveagle/claudecodeui/ccui-server:{{version}} localhost/ccui-server:local
+  echo "Image tagged as localhost/ccui-server:local"
+  echo "Run 'just up' to start the service"
+
+# Show build workflow (server builds MUST use GitHub Actions)
+docker-workflow:
+  #!/bin/bash
+  echo "=== Docker Build Workflow ==="
+  echo ""
+  echo "❌ DO NOT build server images locally - better-sqlite3 will fail"
+  echo ""
+  echo "Frontend changes:"
+  echo "  1. just docker-build    # Builds frontend only"
+  echo "  2. just up              # Restart service"
+  echo ""
+  echo "Server changes:"
+  echo "  1. Commit and push to GitHub"
+  echo "  2. Wait for GitHub Actions to build image"
+  echo "  3. just docker-pull <version>    # e.g., just docker-pull 1.15.2"
+  echo "  4. just up"
+  echo ""
+  echo "Quick start (use latest):"
+  echo "  1. just docker-pull"
+  echo "  2. just up"
+
+# Start production service with podman compose
+up:
+  #!/bin/bash
+  echo "Starting production service on port 7853"
+  podman compose -f docker-compose.yml up -d
+
+# Stop production service
+down:
+  podman compose -f docker-compose.yml down
 
 # Check health status
 health:

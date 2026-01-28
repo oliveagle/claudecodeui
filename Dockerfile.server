@@ -1,22 +1,23 @@
 # Server Dockerfile - Production build with static frontend
 FROM node:20-alpine AS builder
 
-# Install build dependencies for native modules
-RUN apk add --no-cache python3 make g++ sqlite-dev
-
 WORKDIR /app
 
-# Copy package files
+# Copy package files first (for better caching)
 COPY package*.json ./
 
-# Install all dependencies (needed for build)
-RUN npm ci
+# Install build dependencies and all dependencies in one layer
+# This layer only changes when package.json changes
+RUN --mount=type=cache,target=/root/.npm \
+    apk add --no-cache python3 make g++ sqlite-dev && \
+    npm ci
 
 # Copy source files
 COPY . .
 
-# Build frontend
-RUN npm run build
+# Build frontend (this layer changes on any code change)
+RUN --mount=type=cache,target=/root/.npm \
+    npm run build
 
 # Clean up dev dependencies to reduce image size
 RUN npm prune --omit=dev
@@ -24,29 +25,26 @@ RUN npm prune --omit=dev
 # Production stage
 FROM node:20-alpine
 
-# Install runtime dependencies
-RUN apk add --no-cache sqlite bash git curl tar wget openssh ca-certificates
-
-# Install just command runner from binary release (pinned version)
-ENV JUST_VERSION=1.38.0
-RUN cd /tmp && \
+# Install runtime dependencies and tools in one layer
+# This layer only changes when we update tool versions
+RUN apk add --no-cache sqlite bash git curl tar wget openssh ca-certificates && \
+    JUST_VERSION=1.38.0 && \
+    cd /tmp && \
     curl -fsSL "https://github.com/casey/just/releases/download/${JUST_VERSION}/just-${JUST_VERSION}-x86_64-unknown-linux-musl.tar.gz" -o just.tar.gz && \
     tar -xzf just.tar.gz && \
     mv just /usr/local/bin/ && \
     rm -f just.tar.gz && \
-    chmod +x /usr/local/bin/just
-
-# Install GitHub CLI (gh) from binary release (pinned version)
-ENV GH_VERSION=2.86.0
-RUN cd /tmp && \
+    chmod +x /usr/local/bin/just && \
+    GH_VERSION=2.86.0 && \
     curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz" -o gh.tar.gz && \
     tar -xzf gh.tar.gz && \
     mv "gh_${GH_VERSION}_linux_amd64/bin/gh" /usr/local/bin/ && \
     rm -rf "gh_${GH_VERSION}_linux_amd64" gh.tar.gz && \
     chmod +x /usr/local/bin/gh
 
-# Install Claude CLI globally
-RUN npm install -g @anthropic-ai/claude-code
+# Install Claude CLI globally (separate layer as it may update independently)
+RUN --mount=type=cache,target=/root/.npm \
+    npm install -g @anthropic-ai/claude-code
 
 WORKDIR /app
 
@@ -65,6 +63,10 @@ RUN mkdir -p /app/server/database
 # Create symlink for host user home (for plugins compatibility)
 # Container uses /workspace as HOME, but plugins reference /home/oliveagle
 RUN mkdir -p /home && ln -sf /workspace /home/oliveagle
+
+# Create symlink for host mount point (for project path compatibility)
+# Host mounts /mnt/volume3/data to /workspace, but projects use /mnt/volume3/data paths
+RUN mkdir -p /mnt/volume3 && ln -sf /workspace /mnt/volume3/data
 
 ENV PORT=7853
 ENV NODE_ENV=production
