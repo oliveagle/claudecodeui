@@ -25,7 +25,7 @@ RUN npm prune --omit=dev
 FROM node:20-alpine
 
 # Install runtime dependencies
-RUN apk add --no-cache sqlite bash git curl tar wget openssh ca-certificates
+RUN apk add --no-cache sqlite bash git curl tar wget openssh ca-certificates unzip
 
 # Install just command runner from binary release (pinned version)
 ENV JUST_VERSION=1.38.0
@@ -44,6 +44,11 @@ RUN cd /tmp && \
     mv "gh_${GH_VERSION}_linux_amd64/bin/gh" /usr/local/bin/ && \
     rm -rf "gh_${GH_VERSION}_linux_amd64" gh.tar.gz && \
     chmod +x /usr/local/bin/gh
+
+# Install Bun for plugin support
+# Use official installer script
+ENV BUN_INSTALL=/usr/local
+RUN curl -fsSL https://bun.sh/install | bash
 
 # Install Claude CLI globally
 RUN npm install -g @anthropic-ai/claude-code
