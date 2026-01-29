@@ -32,6 +32,24 @@ test:
 docker-build:
   podman build --network=host --ulimit nofile=262144:262144 -f Dockerfile.server -t ccui-server:local .
 
+# Pull and use pre-built images from GitHub (required - local builds don't work)
+docker-pull version="latest":
+  #!/bin/bash
+  echo "Pulling pre-built server image from GitHub..."
+  podman pull ghcr.io/oliveagle/claudecodeui/ccui-server:{{version}}
+  podman tag ghcr.io/oliveagle/claudecodeui/ccui-server:{{version}} localhost/ccui-server:local
+  echo "Server image tagged as localhost/ccui-server:local"
+
+# Start production service with podman compose
+up:
+  #!/bin/bash
+  echo "Starting production service on port 7853"
+  podman compose -f docker-compose.yml up -d
+
+# Stop production service
+down:
+  podman compose -f docker-compose.yml down
+
 # Check health status
 health:
   #!/bin/bash
