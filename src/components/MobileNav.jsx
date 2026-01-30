@@ -35,9 +35,7 @@ function MobileNav({ activeTab, setActiveTab, isInputFocused }) {
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50 ios-bottom-safe transform transition-transform duration-300 ease-in-out shadow-lg ${
-        isInputFocused ? 'translate-y-full' : 'translate-y-0'
-      }`}
+      className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50 ios-bottom-safe shadow-lg"
     >
       <div className="flex items-center justify-around py-1">
         {navItems.map((item) => {
