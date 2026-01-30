@@ -57,13 +57,13 @@ deploy: deploy-latest
 
 # Check health status
 health:
-  #!/bin/bash
+  #!/usr/bin/env bash
   echo "=== CCUI Health Check ==="
   echo ""
 
   # Check container
-  if podman ps --format '{{.Names}}' | grep -q ccui-server; then
-    STATUS=$(podman ps --format '{{.Status}}' --filter name=ccui-server)
+  if podman ps -a --format '{{ '{{' }}.Names{{ '}}' }}' 2>/dev/null | grep -q ccui-server; then
+    STATUS=$(podman ps --format '{{ '{{' }}.Status{{ '}}' }}' --filter name=ccui-server 2>/dev/null)
     echo "✓ Container: RUNNING ($STATUS)"
   else
     echo "✗ Container: NOT RUNNING"
