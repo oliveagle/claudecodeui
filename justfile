@@ -1,85 +1,116 @@
-default:
-  @just --list
+# ===========================================
+# DEVELOPMENT WORKFLOW
+# ===========================================
 
-# Install dependencies
-install:
-  npm install
-
-# Start dev server
-dev:
+# Frontend only - fast iteration (localhost:5173, hot reload)
+dev-frontend:
   #!/bin/bash
-  pkill -f "node server/index.js" 2>/dev/null
+  echo "Starting frontend dev server on localhost:5173..."
+  npm run dev
+
+# Backend only - restart server (port 7853)
+dev-backend:
+  #!/bin/bash
+  pkill -f "node server/index.js" 2>/dev/null || true
   sleep 1
-  PORT=7853 nohup npm run server > /tmp/server.log 2>&1 &
-  echo "Dev server started on port 7853"
+  PORT=7853 nohup node server/index.js > /tmp/ccui-server.log 2>&1 &
+  echo "Server started on port 7853 (PID: $!)"
 
-# Start server (alias for dev)
-server: dev
+# Full dev restart - frontend + backend
+dev: dev-frontend
+  @echo "Frontend started. Run 'just dev-backend' to start server."
 
-# Build for production
-build:
-  npm run build
+# ===========================================
+# PRODUCTION DEPLOY
+# ===========================================
 
-# Start production server
-start: build
-  npm run server
-
-# Run tests
-test:
-  npm test
-
-# Build Docker image locally
+# Build Docker image locally (may fail with native modules)
 docker-build:
   podman build --network=host --ulimit nofile=262144:262144 -f Dockerfile.server -t ccui-server:local .
 
-# Pull and use pre-built images from GitHub (required - local builds don't work)
+# Pull pre-built image from GitHub (recommended)
 docker-pull version="latest":
   #!/bin/bash
-  echo "Pulling pre-built server image from GitHub..."
+  echo "Pulling ghcr.io/oliveagle/claudecodeui/ccui-server:{{version}}..."
   podman pull ghcr.io/oliveagle/claudecodeui/ccui-server:{{version}}
-  podman tag ghcr.io/oliveagle/claudecodeui/ccui-server:{{version}} localhost/ccui-server:local
-  echo "Server image tagged as localhost/ccui-server:local"
 
-# Start production service with podman compose
+# Start production service
 up:
   #!/bin/bash
-  echo "Starting production service on port 7853"
+  echo "Starting production service on port 7853..."
   podman compose -f docker-compose.yml up -d
 
 # Stop production service
 down:
   podman compose -f docker-compose.yml down
 
+# ===========================================
+# UNIFIED DEPLOY COMMANDS
+# ===========================================
+
+# Deploy: Build locally, tag, and restart
+# Use when you have local changes not pushed to GitHub
+deploy-local:
+  @just docker-build && just down && just up
+
+# Deploy: Pull latest from GitHub and restart
+# Use after 'git push' and CI build completes
+deploy-latest:
+  @just docker-pull && just down && just up
+
+# Deploy: Unified command - choose method
+deploy method="latest":
+  @if [ "{{method}}" = "local" ]; then \
+    echo "Building locally and deploying..."; \
+    just deploy-local; \
+  else \
+    echo "Pulling latest and deploying..."; \
+    just deploy-latest; \
+  fi
+
+# ===========================================
+# UTILITIES
+# ===========================================
+
 # Check health status
 health:
   #!/bin/bash
-  echo "=== Health Check ==="
+  echo "=== CCUI Health Check ==="
   echo ""
 
-  # Check server process
-  if pgrep -f "node server/index.js" > /dev/null; then
-    echo "✓ Server process: RUNNING"
-    SERVER_PID=$(pgrep -f "node server/index.js")
-    echo "  PID: $SERVER_PID"
+  # Check container
+  if podman ps --format '{{.Names}}' | grep -q ccui-server; then
+    STATUS=$(podman ps --format '{{.Status}}' --filter name=ccui-server)
+    echo "✓ Container: RUNNING ($STATUS)"
   else
-    echo "✗ Server process: NOT RUNNING"
+    echo "✗ Container: NOT RUNNING"
   fi
 
-  # Check server port
+  # Check port
   if lsof -i :7853 > /dev/null 2>&1; then
-    echo "✓ Server port 7853: LISTENING"
+    echo "✓ Port 7853: LISTENING"
   else
-    echo "✗ Server port 7853: NOT LISTENING"
+    echo "✗ Port 7853: NOT LISTENING"
   fi
 
   echo ""
   echo "==================="
 
-# Show current version
+# View server logs
+logs:
+  podman compose -f docker-compose.yml logs -f
+
+# Restart service (no rebuild)
+restart:
+  just down && just up
+
+# ===========================================
+# VERSION MANAGEMENT
+# ===========================================
+
 version:
   @cat VERSION
 
-# Bump patch version (1.0.0 -> 1.0.1)
 version-bump:
   #!/bin/bash
   current=$(cat VERSION)
@@ -88,9 +119,8 @@ version-bump:
   new="${major}.${minor}.${patch}"
   echo "$new" > VERSION
   node -e "const p=require('./package.json');p.version='$new';fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
-  echo "Bumped version: $current -> $new"
+  echo "Bumped: $current → $new"
 
-# Bump minor version (1.0.1 -> 1.1.0)
 version-bump-minor:
   #!/bin/bash
   current=$(cat VERSION)
@@ -100,12 +130,32 @@ version-bump-minor:
   new="${major}.${minor}.${patch}"
   echo "$new" > VERSION
   node -e "const p=require('./package.json');p.version='$new';fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
-  echo "Bumped version: $current -> $new"
+  echo "Bumped: $current → $new"
 
-# Create git tag for current version
+# ===========================================
+# LEGACY ALIASES (for compatibility)
+# ===========================================
+
+default:
+  @just --list
+
+install:
+  npm install
+
+build:
+  npm run build
+
+start: build
+  npm run server
+
+test:
+  npm test
+
+server: dev
+
 version-tag:
   #!/bin/bash
   v=$(cat VERSION)
   git tag -a "v$v" -m "Release v$v"
   git push fork "v$v"
-  echo "Created and pushed tag: v$v"
+  echo "Tag v$v created and pushed"
