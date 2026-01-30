@@ -908,7 +908,7 @@ function AppContent() {
       )}
 
       {/* Main Content Area - Flexible */}
-      <div className={`flex-1 flex flex-col min-w-0 ${isMobile && !isInputFocused ? 'pb-mobile-nav' : ''}`}>
+      <div className="flex-1 flex flex-col min-w-0 pb-mobile-nav">
         <MainContent
           selectedProject={selectedProject}
           selectedSession={selectedSession}
@@ -939,14 +939,11 @@ function AppContent() {
         />
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      {isMobile && (
-        <MobileNav
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          isInputFocused={isInputFocused}
-        />
-      )}
+      {/* Bottom Navigation */}
+      <MobileNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+      />
       {/* Quick Settings Panel - Only show on chat tab */}
       {activeTab === 'chat' && (
         <QuickSettingsPanel
