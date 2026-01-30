@@ -256,6 +256,128 @@ app.get('/health', (req, res) => {
   });
 });
 
+// ============================================
+// Logger API - Server-side logging with WebSocket streaming
+// ============================================
+
+// In-memory circular log buffer (last 1000 entries)
+const LOG_BUFFER_SIZE = 1000;
+const logBuffer = [];
+const logBufferMutex = { locked: false };
+
+// Add log entry to buffer
+function addLogEntry(level, message, meta = {}) {
+  const entry = {
+    id: Date.now() + Math.random().toString(36).substr(2, 9),
+    timestamp: new Date().toISOString(),
+    level, // 'info', 'warn', 'error', 'debug'
+    message,
+    meta
+  };
+
+  // Simple mutex protection
+  while (logBufferMutex.locked) {
+    // wait
+  }
+  logBufferMutex.locked = true;
+
+  try {
+    logBuffer.push(entry);
+    if (logBuffer.length > LOG_BUFFER_SIZE) {
+      logBuffer.shift();
+    }
+  } finally {
+    logBufferMutex.locked = false;
+  }
+
+  // Broadcast to WebSocket log clients
+  broadcastLog(entry);
+
+  return entry;
+}
+
+// Broadcast log to connected WebSocket clients
+function broadcastLog(entry) {
+  const logClients = wss.clients.filter(client =>
+    client.logClient === true && client.readyState === WebSocket.OPEN
+  );
+
+  const message = JSON.stringify({
+    type: 'log',
+    data: entry
+  });
+
+  logClients.forEach(client => {
+    try {
+      client.send(message);
+    } catch (e) {
+      console.error('Failed to send log to client:', e.message);
+    }
+  });
+}
+
+// Wrap console methods to capture logs
+const originalConsole = {
+  log: console.log,
+  error: console.error,
+  warn: console.warn,
+  info: console.info,
+  debug: console.debug
+};
+
+console.log = function(...args) {
+  originalConsole.log.apply(console, args);
+  addLogEntry('info', args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' '));
+};
+
+console.error = function(...args) {
+  originalConsole.error.apply(console, args);
+  addLogEntry('error', args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' '));
+};
+
+console.warn = function(...args) {
+  originalConsole.warn.apply(console, args);
+  addLogEntry('warn', args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' '));
+};
+
+// Logger API Routes
+// Get recent logs (REST)
+app.get('/api/logs', authenticateToken, (req, res) => {
+  const { level, limit = 100, offset = 0 } = req.query;
+
+  let filtered = logBuffer;
+  if (level) {
+    filtered = filtered.filter(entry => entry.level === level);
+  }
+
+  const total = filtered.length;
+  const start = Math.min(parseInt(offset) || 0, total);
+  const end = start + Math.min(parseInt(limit) || 100, total - start);
+
+  res.json({
+    logs: filtered.slice(start, end),
+    total,
+    offset: start,
+    limit: end - start
+  });
+});
+
+// Clear logs
+app.delete('/api/logs', authenticateToken, (req, res) => {
+  while (logBufferMutex.locked) {
+    // wait
+  }
+  logBufferMutex.locked = true;
+
+  try {
+    logBuffer.length = 0;
+  } finally {
+    logBufferMutex.locked = false;
+  }
+
+  res.json({ success: true, message: 'Logs cleared' });
+});
+
 // Optional API key validation (if configured)
 app.use('/api', validateApiKey);
 
@@ -735,6 +857,46 @@ wss.on('connection', (ws, request) => {
     // Parse URL to get pathname without query parameters
     const urlObj = new URL(url, 'http://localhost');
     const pathname = urlObj.pathname;
+    const searchParams = urlObj.searchParams;
+
+    // Log streaming WebSocket (with ?logs=true query param)
+    if (searchParams.get('logs') === 'true') {
+        ws.logClient = true;
+        console.log('[LOG] New log client connected');
+
+        // Send current log buffer to new client
+        ws.send(JSON.stringify({
+            type: 'logs-sync',
+            data: logBuffer.slice(-50) // Last 50 logs
+        }));
+
+        ws.on('message', (data) => {
+            try {
+                const msg = JSON.parse(data.toString());
+
+                if (msg.type === 'subscribe') {
+                    ws.logLevels = msg.levels || ['info', 'warn', 'error'];
+                    console.log(`[LOG] Client subscribed to levels: ${ws.logLevels.join(', ')}`);
+                }
+
+                if (msg.type === 'ping') {
+                    ws.send(JSON.stringify({ type: 'pong' }));
+                }
+            } catch (e) {
+                console.error('[LOG] Invalid message from client:', e.message);
+            }
+        });
+
+        ws.on('close', () => {
+            console.log('[LOG] Log client disconnected');
+        });
+
+        ws.on('error', (err) => {
+            console.error('[LOG] Client error:', err.message);
+        });
+
+        return;
+    }
 
     if (pathname === '/shell') {
         handleShellConnection(ws);
