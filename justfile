@@ -24,10 +24,6 @@ dev: dev-frontend
 # PRODUCTION DEPLOY
 # ===========================================
 
-# Build Docker image locally (may fail with native modules)
-docker-build:
-  podman build --network=host --ulimit nofile=262144:262144 -f Dockerfile.server -t ccui-server:local .
-
 # Pull pre-built image from GitHub (recommended)
 docker-pull version="latest":
   #!/bin/bash
@@ -48,25 +44,12 @@ down:
 # UNIFIED DEPLOY COMMANDS
 # ===========================================
 
-# Deploy: Build locally, tag, and restart
-# Use when you have local changes not pushed to GitHub
-deploy-local:
-  @just docker-build && just down && just up
-
 # Deploy: Pull latest from GitHub and restart
-# Use after 'git push' and CI build completes
 deploy-latest:
   @just docker-pull && just down && just up
 
-# Deploy: Unified command - choose method
-deploy method="latest":
-  @if [ "{{method}}" = "local" ]; then \
-    echo "Building locally and deploying..."; \
-    just deploy-local; \
-  else \
-    echo "Pulling latest and deploying..."; \
-    just deploy-latest; \
-  fi
+# Deploy
+deploy: deploy-latest
 
 # ===========================================
 # UTILITIES
