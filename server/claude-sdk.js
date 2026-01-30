@@ -10,9 +10,53 @@
  * - Session management with abort capability
  * - Options mapping between CLI and SDK formats
  * - WebSocket message streaming
+ * - Custom API URL support (for MiniMax, BigModel, etc.)
  */
 
-import { query } from '@anthropic-ai/claude-agent-sdk';
+import { query, tool } from '@anthropic-ai/claude-agent-sdk';
+
+// Custom API configuration
+const getApiBaseUrl = () => {
+  return process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com';
+};
+
+const isCustomApi = () => {
+  const baseUrl = getApiBaseUrl();
+  return baseUrl && !baseUrl.includes('api.anthropic.com');
+};
+
+// Model name mapping: SDK names -> API model names
+const MODEL_NAME_MAP = {
+  'sonnet': 'MiniMax-M2.1',
+  'opus': 'MiniMax-M2.1',
+  'haiku': 'MiniMax-M2.1'
+};
+
+// Patch global fetch to redirect Anthropic API calls to custom URL
+// This enables support for MiniMax, BigModel, and other Anthropic-compatible APIs
+if (isCustomApi()) {
+  const originalFetch = globalThis.fetch;
+  const customBaseUrl = getApiBaseUrl();
+
+  globalThis.fetch = function(input, init) {
+    let url = input;
+    let urlStr = typeof input === 'string' ? input : input.url;
+
+    // Redirect Anthropic API calls to custom URL
+    if (urlStr && urlStr.includes('api.anthropic.com')) {
+      const newUrl = urlStr.replace('https://api.anthropic.com', customBaseUrl);
+      console.log(`[API Redirect] ${urlStr} -> ${newUrl}`);
+
+      const newInput = typeof input === 'string' ? newUrl : { ...input, url: newUrl };
+      return originalFetch(newInput, init);
+    }
+
+    return originalFetch(input, init);
+  };
+
+  console.log(`[SDK] Patched fetch to use custom API: ${customBaseUrl}`);
+}
+
 // Used to mint unique approval request IDs when randomUUID is not available.
 // This keeps parallel tool approvals from colliding; it does not add any crypto/security guarantees.
 import crypto from 'crypto';
@@ -198,8 +242,11 @@ function mapCliOptionsToSDK(options = {}) {
 
   // Map model (default to sonnet)
   // Valid models: sonnet, opus, haiku, opusplan, sonnet[1m]
-  sdkOptions.model = options.model || CLAUDE_MODELS.DEFAULT;
-  console.log(`Using model: ${sdkOptions.model}`);
+  // Map to API model name if using custom provider (MiniMax, BigModel, etc.)
+  const sdkModel = options.model || CLAUDE_MODELS.DEFAULT;
+  const apiModel = MODEL_NAME_MAP[sdkModel] || sdkModel;
+  sdkOptions.model = apiModel;
+  console.log(`Using model: ${sdkModel} -> ${apiModel} (API)`);
 
   // Map system prompt configuration
   sdkOptions.systemPrompt = {
