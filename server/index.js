@@ -298,6 +298,11 @@ function addLogEntry(level, message, meta = {}) {
 
 // Broadcast log to connected WebSocket clients
 function broadcastLog(entry) {
+  // Check if wss is ready (may not be during early initialization)
+  if (!wss || !wss.clients || typeof wss.clients.filter !== 'function') {
+    return; // Skip broadcasting during startup
+  }
+
   const logClients = wss.clients.filter(client =>
     client.logClient === true && client.readyState === WebSocket.OPEN
   );
