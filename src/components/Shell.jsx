@@ -91,7 +91,17 @@ function Shell({ selectedProject, selectedSession, initialCommand, isPlainShell 
               cols: terminal.current.cols,
               rows: terminal.current.rows,
               initialCommand: initialCommandRef.current,
-              isPlainShell: isPlainShellRef.current
+              isPlainShell: isPlainShellRef.current,
+              skipPermissions: (() => {
+                try {
+                  const savedSettings = localStorage.getItem('claude-settings');
+                  if (savedSettings) {
+                    const settings = JSON.parse(savedSettings);
+                    return settings.skipPermissions || false;
+                  }
+                } catch (e) {}
+                return false;
+              })()
             }));
           }
         }, 100);

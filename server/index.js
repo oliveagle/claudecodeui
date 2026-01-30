@@ -1154,12 +1154,17 @@ function handleShellConnection(ws) {
                     return;
                 }
 
+                // Get skipPermissions from client settings
+                const skipPermissions = data.skipPermissions || false;
+                const skipPermissionsFlag = skipPermissions ? ' --dangerously-skip-permissions' : '';
+
                 console.log('[INFO] Starting shell in:', projectPath);
                 console.log('📋 Session info:', hasSession ? `Resume session ${sessionId}` : (isPlainShell ? 'Plain shell mode' : 'New session'));
                 console.log('🤖 Provider:', isPlainShell ? 'plain-shell' : provider);
                 if (initialCommand) {
                     console.log('⚡ Initial command:', initialCommand);
                 }
+                console.log('⏭️ Skip permissions:', skipPermissions);
 
                 // First send a welcome message
                 let welcomeMsg;
@@ -1189,32 +1194,33 @@ function handleShellConnection(ws) {
                         }
                     } else if (provider === 'cursor') {
                         // Use cursor-agent command
+                        const cursorSkipFlag = skipPermissions ? ' --yes' : '';
                         if (os.platform() === 'win32') {
                             if (hasSession && sessionId) {
-                                shellCommand = `Set-Location -Path "${projectPath}"; cursor-agent --resume="${sessionId}"`;
+                                shellCommand = `Set-Location -Path "${projectPath}"; cursor-agent --resume="${sessionId}"${cursorSkipFlag}`;
                             } else {
-                                shellCommand = `Set-Location -Path "${projectPath}"; cursor-agent`;
+                                shellCommand = `Set-Location -Path "${projectPath}"; cursor-agent${cursorSkipFlag}`;
                             }
                         } else {
                             if (hasSession && sessionId) {
-                                shellCommand = `cd "${projectPath}" && cursor-agent --resume="${sessionId}"`;
+                                shellCommand = `cd "${projectPath}" && cursor-agent --resume="${sessionId}"${cursorSkipFlag}`;
                             } else {
-                                shellCommand = `cd "${projectPath}" && cursor-agent`;
+                                shellCommand = `cd "${projectPath}" && cursor-agent${cursorSkipFlag}`;
                             }
                         }
                     } else {
                         // Use claude command (default) or initialCommand if provided
-                        const command = initialCommand || 'claude';
+                        const command = initialCommand ? `${initialCommand}${skipPermissionsFlag}` : `claude${skipPermissionsFlag}`;
                         if (os.platform() === 'win32') {
                             if (hasSession && sessionId) {
                                 // Try to resume session, but with fallback to new session if it fails
-                                shellCommand = `Set-Location -Path "${projectPath}"; claude --resume ${sessionId}; if ($LASTEXITCODE -ne 0) { claude }`;
+                                shellCommand = `Set-Location -Path "${projectPath}"; claude --resume ${sessionId}${skipPermissionsFlag}; if ($LASTEXITCODE -ne 0) { claude${skipPermissionsFlag} }`;
                             } else {
                                 shellCommand = `Set-Location -Path "${projectPath}"; ${command}`;
                             }
                         } else {
                             if (hasSession && sessionId) {
-                                shellCommand = `cd "${projectPath}" && claude --resume ${sessionId} || claude`;
+                                shellCommand = `cd "${projectPath}" && claude --resume ${sessionId}${skipPermissionsFlag} || claude${skipPermissionsFlag}`;
                             } else {
                                 shellCommand = `cd "${projectPath}" && ${command}`;
                             }

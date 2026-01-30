@@ -499,12 +499,12 @@ function MainContent({
           </ErrorBoundary>
         </div>
         {activeTab === 'files' && (
-          <div className="h-full overflow-hidden">
+          <div className={`h-full overflow-hidden ${isMobile ? 'pb-mobile-nav' : ''}`}>
             <FileTree selectedProject={selectedProject} />
           </div>
         )}
         {activeTab === 'shell' && (
-          <div className="h-full w-full overflow-hidden">
+          <div className={`h-full w-full overflow-hidden ${isMobile ? 'pb-mobile-nav' : ''}`}>
             <StandaloneShell
               project={selectedProject}
               session={selectedSession}
@@ -513,13 +513,13 @@ function MainContent({
           </div>
         )}
         {activeTab === 'git' && (
-          <div className="h-full overflow-hidden">
+          <div className={`h-full overflow-hidden ${isMobile ? 'pb-mobile-nav' : ''}`}>
             <GitPanel selectedProject={selectedProject} isMobile={isMobile} onFileOpen={handleFileOpen} />
           </div>
         )}
         {shouldShowTasksTab && (
           <div className={`h-full ${activeTab === 'tasks' ? 'block' : 'hidden'}`}>
-            <div className="h-full flex flex-col overflow-hidden">
+            <div className={`h-full flex flex-col overflow-hidden ${isMobile ? 'pb-mobile-nav' : ''}`}>
               <TaskList
                 tasks={tasks || []}
                 onTaskClick={handleTaskClick}
@@ -551,7 +551,7 @@ function MainContent({
             </div>
           </div>
         )}
-        <div className={`h-full overflow-hidden ${activeTab === 'preview' ? 'block' : 'hidden'}`}>
+        <div className={`h-full overflow-hidden ${activeTab === 'preview' ? 'block' : 'hidden'} ${isMobile ? 'pb-mobile-nav' : ''}`}>
           {/* <LivePreviewPanel
             selectedProject={selectedProject}
             serverStatus={serverStatus}
