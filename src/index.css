@@ -669,6 +669,11 @@
     }
   }
 
+  /* Mobile navigation padding - adds bottom padding to accommodate the mobile nav bar */
+  .pb-mobile-nav {
+    padding-bottom: var(--mobile-nav-total);
+  }
+
   /* Text wrapping improvements */
   .chat-message {
     word-wrap: break-word;

@@ -41,6 +41,32 @@ down:
   podman compose -f docker-compose.yml down
 
 # ===========================================
+# DEVELOPMENT CONTAINER MODE (single container with hot reload)
+# ===========================================
+
+# Start dev container with hot reload (single container, frontend + backend)
+# Frontend: http://localhost:5174
+# Backend API: http://localhost:7853
+dev-up:
+  #!/bin/bash
+  echo "Starting dev container with hot reload..."
+  echo "Frontend: http://localhost:5174"
+  echo "Backend:  http://localhost:7853"
+  podman compose -f docker-compose.dev.yml up -d
+
+# Stop dev container
+dev-down:
+  podman compose -f docker-compose.dev.yml down
+
+# View dev container logs
+dev-logs:
+  podman compose -f docker-compose.dev.yml logs -f
+
+# Restart dev container
+dev-restart:
+  just dev-down && just dev-up
+
+# ===========================================
 # UNIFIED DEPLOY COMMANDS
 # ===========================================
 

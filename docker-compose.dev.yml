@@ -1,44 +1,54 @@
-# Development mode - separate server and client with hot reload
+# Development Docker Compose - Single container with hot reload
+# Uses pre-built image but mounts local source for fast iteration
+# Frontend: http://0.0.0.0:7853 (hot reload)
+# Backend API: http://localhost:3001 (proxied via frontend)
+# Terminal access works because everything is in one container
 services:
-  server:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
+  server-dev:
+    image: ghcr.io/oliveagle/claudecodeui/ccui-server:latest
     container_name: ccui-server-dev
     ports:
-      - "7853:7853"
+      - "0.0.0.0:7853:7853"  # Vite dev server (hot reload) - bind to all interfaces
     environment:
-      - PORT=7853
+      - PORT=3001
       - NODE_ENV=development
+      - VITE_PORT=7853
+      - HOME=/workspace
+      - ANTHROPIC_AUTH_TOKEN=${ANTHROPIC_AUTH_TOKEN}
+      - ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL}
+      - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-GLM-4.7}
     volumes:
-      # Mount source for hot reload (not recommended for production)
-      - ./server:/app/server
-      - ./shared:/app/shared
-      - server-data:/app/server/database
-    command: ["node", "server/index.js"]
+      # Mount local source code for hot reload
+      - ./src:/app/src:cached
+      - ./server:/app/server:cached
+      - ./shared:/app/shared:cached
+      - ./index.html:/app/index.html:cached
+      - ./vite.config.js:/app/vite.config.js:cached
+      - ./tailwind.config.js:/app/tailwind.config.js:cached
+      - ./postcss.config.js:/app/postcss.config.js:cached
+      - ./package.json:/app/package.json:cached
+      # Preserve container's node_modules and dist
+      - /app/node_modules
+      - /app/dist
+      # Data and config volumes
+      - server-dev-data:/app/server/database
+      - /mnt/volume3/data:/workspace
+      - ~/.claude:/workspace/.claude
+      - ~/.ssh/id_rsa:/workspace/.ssh/id_rsa:ro
+      - ~/.ssh/id_rsa.pub:/workspace/.ssh/id_rsa.pub:ro
+      - ~/.ssh/known_hosts:/workspace/.ssh/known_hosts
+      - ~/.ssh/id_rsa:/root/.ssh/id_rsa:ro
+      - ~/.ssh/id_rsa.pub:/root/.ssh/id_rsa.pub:ro
+      - ~/.ssh/known_hosts:/root/.ssh/known_hosts:ro
+      - ~/.gitconfig:/workspace/.gitconfig:ro
+      - ~/.config/gh:/workspace/.config/gh
+    working_dir: /app
+    # Run npm run dev which starts both frontend and backend with hot reload
+    command: ["sh", "-c", "npm install && PORT=3001 VITE_PORT=7853 npm run dev"]
     restart: unless-stopped
-
-  client:
-    build:
-      context: .
-      dockerfile: Dockerfile.client
-    container_name: ccui-client-dev
-    ports:
-      - "5174:5174"
-    environment:
-      - VITE_PORT=5174
-      - PORT=7853
-    volumes:
-      # Mount source for hot reload
-      - ./src:/app/src
-      - ./index.html:/app/index.html
-      - ./vite.config.js:/app/vite.config.js
-      - ./tailwind.config.js:/app/tailwind.config.js
-      - ./postcss.config.js:/app/postcss.config.js
-    depends_on:
-      - server
-    restart: unless-stopped
+    stdin_open: true
+    tty: true
 
 volumes:
-  server-data:
+  server-dev-data:
     driver: local

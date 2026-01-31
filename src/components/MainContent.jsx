@@ -504,7 +504,7 @@ function MainContent({
           </div>
         )}
         {activeTab === 'shell' && (
-          <div className={`h-full w-full overflow-hidden ${isMobile ? 'pb-mobile-nav' : ''}`}>
+          <div className={`h-full w-full overflow-hidden bg-gray-900 ${isMobile ? 'pb-mobile-nav' : ''}`}>
             <StandaloneShell
               project={selectedProject}
               session={selectedSession}
