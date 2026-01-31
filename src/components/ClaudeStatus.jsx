@@ -210,8 +210,8 @@ function ClaudeStatus({
                 {/* Token stats - show if available */}
                 {getTokenStats && (
                   <>
-                    <span className="text-gray-500 hidden sm:inline">·</span>
-                    <span className="text-gray-300 text-xs sm:text-sm flex-shrink-0 hidden sm:inline" title="Token usage">
+                    <span className="text-gray-500">·</span>
+                    <span className="text-gray-300 text-xs sm:text-sm flex-shrink-0" title="Token usage">
                       ⚡ {getTokenStats.input !== undefined && getTokenStats.output !== undefined
                         ? `${formatTokens(getTokenStats.input)}↑ ${formatTokens(getTokenStats.output)}↓`
                         : `${formatTokens(getTokenStats.total || 0)} / ${formatTokens(getTokenStats.limit || 160000)}`
