@@ -1934,6 +1934,8 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
   const [slashPosition, setSlashPosition] = useState(-1);
   const [visibleMessageCount, setVisibleMessageCount] = useState(100);
   const [claudeStatus, setClaudeStatus] = useState(null);
+  // Track current tool being used for enhanced status display
+  const [currentTool, setCurrentTool] = useState(null);
   const [thinkingMode, setThinkingMode] = useState('none');
   const [provider, setProvider] = useState(() => {
     return localStorage.getItem('selected-provider') || 'claude';
@@ -3483,6 +3485,13 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
               if (part.type === 'tool_use') {
                 // Add tool use message
                 const toolInput = part.input ? JSON.stringify(part.input, null, 2) : '';
+                // Track current tool for status display
+                setCurrentTool({
+                  name: part.name,
+                  input: part.input,
+                  id: part.id,
+                  timestamp: Date.now()
+                });
                 setChatMessages(prev => [...prev, {
                   type: 'assistant',
                   content: '',
@@ -3523,6 +3532,8 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
           if (messageData.role === 'user' && Array.isArray(messageData.content)) {
             for (const part of messageData.content) {
               if (part.type === 'tool_result') {
+                // Clear current tool when we get a result
+                setCurrentTool(null);
                 // Find the corresponding tool use and update it with the result
                 setChatMessages(prev => prev.map(msg => {
                   if (msg.isToolUse && msg.toolId === part.tool_use_id) {
@@ -3675,6 +3686,11 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
           
         case 'cursor-tool-use':
           // Handle Cursor tool use messages
+          setCurrentTool({
+            name: latestMessage.tool,
+            input: latestMessage.input,
+            timestamp: Date.now()
+          });
           setChatMessages(prev => [...prev, {
             type: 'assistant',
             content: `Using tool: ${latestMessage.tool} ${latestMessage.input ? `with ${latestMessage.input}` : ''}`,
@@ -3687,6 +3703,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
         
         case 'cursor-error':
           // Show Cursor errors as error messages in chat
+          setCurrentTool(null);
           setChatMessages(prev => [...prev, {
             type: 'error',
             content: `Cursor error: ${latestMessage.error || 'Unknown error'}`,
@@ -3703,6 +3720,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
             setIsLoading(false);
             setCanAbortSession(false);
             setClaudeStatus(null);
+            setCurrentTool(null);
           }
 
           // Always mark the completed session as inactive and not processing
@@ -3800,6 +3818,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
             setIsLoading(false);
             setCanAbortSession(false);
             setClaudeStatus(null);
+            setCurrentTool(null);
           }
 
           // Always mark the completed session as inactive and not processing
@@ -3863,6 +3882,11 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
 
                 case 'command_execution':
                   if (codexData.command) {
+                    setCurrentTool({
+                      name: 'Bash',
+                      input: { command: codexData.command },
+                      timestamp: Date.now()
+                    });
                     setChatMessages(prev => [...prev, {
                       type: 'assistant',
                       content: '',
@@ -3879,6 +3903,11 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
                 case 'file_change':
                   if (codexData.changes?.length > 0) {
                     const changesList = codexData.changes.map(c => `${c.kind}: ${c.path}`).join('\n');
+                    setCurrentTool({
+                      name: 'Edit',
+                      input: { file_path: codexData.changes[0]?.path || 'unknown' },
+                      timestamp: Date.now()
+                    });
                     setChatMessages(prev => [...prev, {
                       type: 'assistant',
                       content: '',
@@ -3892,6 +3921,11 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
                   break;
 
                 case 'mcp_tool_call':
+                  setCurrentTool({
+                    name: `${codexData.server}:${codexData.tool}`,
+                    input: codexData.arguments,
+                    timestamp: Date.now()
+                  });
                   setChatMessages(prev => [...prev, {
                     type: 'assistant',
                     content: '',
@@ -3922,11 +3956,13 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
             if (codexData.type === 'turn_complete') {
               // Turn completed, message stream done
               setIsLoading(false);
+              setCurrentTool(null);
             }
 
             // Handle turn failed
             if (codexData.type === 'turn_failed') {
               setIsLoading(false);
+              setCurrentTool(null);
               setChatMessages(prev => [...prev, {
                 type: 'error',
                 content: codexData.error?.message || 'Turn failed',
@@ -3944,6 +3980,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
             setIsLoading(false);
             setCanAbortSession(false);
             setClaudeStatus(null);
+            setCurrentTool(null);
           }
 
           if (codexCompletedSessionId) {
@@ -5291,7 +5328,8 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
                 isLoading={isLoading}
                 onAbort={handleAbortSession}
                 provider={provider}
-                showThinking={showThinking}
+                tokenBudget={tokenBudget}
+                currentTool={currentTool}
               />
               </div>
         {/* Permission Mode Selector with scroll to bottom button - Above input, clickable for mobile */}
