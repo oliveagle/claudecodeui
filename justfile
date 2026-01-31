@@ -51,6 +51,48 @@ deploy-latest:
 # Deploy
 deploy: deploy-latest
 
+# Run previous working version on port 7854 (for rollback testing)
+prev-work version:
+  just prev-working {{version}}
+
+# Run previous working version on port 7854 (for rollback testing)
+prev-working version:
+  #!/bin/bash
+  echo "Starting previous working version {{version}} on port 7854..."
+  podman run -d \
+    --name ccui-server-prev \
+    --restart unless-stopped \
+    -p 7854:3000 \
+    -v /home/oliveagle/.claude:/home/oliveagle/.claude:ro \
+    -v /home/oliveagle/.claude-code:/home/oliveagle/.claude-code:ro \
+    -v /home/oliveagle/.claude-code-ui:/home/oliveagle/.claude-code-ui \
+    -v /home/oliveagle/.anthropic:/home/oliveagle/.anthropic:ro \
+    -v /home/oliveagle/.openrouter:/home/oliveagle/.openrouter:ro \
+    -v /home/oliveagle/.openai:/home/oliveagle/.openai:ro \
+    -v /home/oliveagle/.gemini:/home/oliveagle/.gemini:ro \
+    -v /home/oliveagle/.deepseek:/home/oliveagle/.deepseek:ro \
+    -v /home/oliveagle/.siliconflow:/home/oliveagle/.siliconflow:ro \
+    -v /home/oliveagle/.modelscope:/home/oliveagle/.modelscope:ro \
+    -v /home/oliveagle/.dashscope:/home/oliveagle/.dashscope:ro \
+    -v /home/oliveagle/.giteeai:/home/oliveagle/.giteeai:ro \
+    -v /home/oliveagle/.github:/home/oliveagle/.github:ro \
+    -v /home/oliveagle/.vscode:/home/oliveagle/.vscode:ro \
+    -v /home/oliveagle/.continue:/home/oliveagle/.continue:ro \
+    -v /home/oliveagle/.aider:/home/oliveagle/.aider:ro \
+    -v /home/oliveagle/workspace:/home/oliveagle/workspace \
+    -v /mnt/volume3/data/repos:/mnt/volume3/data/repos \
+    -e HOME=/home/oliveagle \
+    ghcr.io/oliveagle/claudecodeui/ccui-server:{{version}}
+  echo "Previous version {{version}} is now running on http://localhost:7854"
+
+# Stop previous working version
+prev-working-stop:
+  #!/bin/bash
+  echo "Stopping previous working version..."
+  podman stop ccui-server-prev 2>/dev/null || true
+  podman rm ccui-server-prev 2>/dev/null || true
+  echo "Previous working version stopped"
+
 # ===========================================
 # UTILITIES
 # ===========================================
