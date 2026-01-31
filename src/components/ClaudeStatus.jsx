@@ -211,9 +211,11 @@ function ClaudeStatus({
                 {getTokenStats && (
                   <>
                     <span className="text-gray-500 hidden sm:inline">·</span>
-                    <span className="text-gray-300 text-xs sm:text-sm flex-shrink-0 hidden sm:inline" title="Input / Output tokens">
-                      ⚡ {formatTokens(getTokenStats.input || getTokenStats.total)}
-                      {getTokenStats.output > 0 && ` / ${formatTokens(getTokenStats.output)}`}
+                    <span className="text-gray-300 text-xs sm:text-sm flex-shrink-0 hidden sm:inline" title="Token usage">
+                      ⚡ {getTokenStats.input !== undefined && getTokenStats.output !== undefined
+                        ? `${formatTokens(getTokenStats.input)}↑ ${formatTokens(getTokenStats.output)}↓`
+                        : `${formatTokens(getTokenStats.total || 0)} / ${formatTokens(getTokenStats.limit || 160000)}`
+                      }
                     </span>
                   </>
                 )}

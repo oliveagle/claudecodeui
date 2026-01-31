@@ -46,9 +46,6 @@ function MobileNav({ activeTab, setActiveTab, isInputFocused }) {
             <button
               key={item.id}
               onClick={item.onClick}
-              onTouchStart={() => {
-                item.onClick();
-              }}
               className={`flex items-center justify-center p-2 rounded-lg min-h-[40px] min-w-[40px] relative touch-manipulation ${
                 isActive
                   ? 'text-blue-600 dark:text-blue-400'
