@@ -57,11 +57,12 @@ function ClaudeStatus({
     return () => clearInterval(timer);
   }, [isLoading]);
 
-  // Don't show if loading is false
-  if (!isLoading) return null;
-
-  // Smart status detection
+  // Smart status detection - MUST be before any conditional return
   const getStatusInfo = useMemo(() => {
+    if (!isLoading) {
+      return { text: '', icon: '✻', color: 'blue' };
+    }
+
     // Priority 1: Explicit status from parent
     if (status?.text) {
       return {
@@ -134,16 +135,9 @@ function ClaudeStatus({
       icon: '✻',
       color: 'blue'
     };
-  }, [status, currentTool, elapsedTime, lastActivityTime, provider]);
+  }, [status, currentTool, elapsedTime, lastActivityTime, provider, isLoading]);
 
-  // Format token numbers
-  const formatTokens = (num) => {
-    if (!num || num === 0) return '0';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
-    return num.toString();
-  };
-
-  // Get real token stats
+  // Get real token stats - MUST be before any conditional return
   const getTokenStats = useMemo(() => {
     if (!tokenBudget) return null;
 
@@ -163,6 +157,16 @@ function ClaudeStatus({
       limit: tokenBudget.total || 160000
     };
   }, [tokenBudget]);
+
+  // Don't show if loading is false - AFTER all hooks
+  if (!isLoading) return null;
+
+  // Format token numbers
+  const formatTokens = (num) => {
+    if (!num || num === 0) return '0';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
+    return num.toString();
+  };
 
   // Animation characters
   const spinners = ['✻', '✹', '✸', '✶'];
