@@ -11,13 +11,8 @@ export default defineConfig(({ command, mode }) => {
     server: {
       host: '0.0.0.0',
       port: parseInt(env.VITE_PORT) || 5174,
-      hmr: {
-        // Allow any host - client uses window.location.hostname
-        host: env.VITE_HMR_HOST || undefined,
-        port: parseInt(env.VITE_PORT) || 5174,
-        clientPort: parseInt(env.VITE_PORT) || 5174,
-        protocol: 'ws'
-      },
+      // HMR auto-detects host from browser location
+      cors: true,
       proxy: {
         '/api': `http://localhost:${env.PORT || 3001}`,
         '/ws': {

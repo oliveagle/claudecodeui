@@ -25,6 +25,7 @@ services:
       - ./server:/app/server:cached
       - ./shared:/app/shared:cached
       - ./index.html:/app/index.html:cached
+      - ./public:/app/public:cached
       - ./vite.config.js:/app/vite.config.js:cached
       - ./tailwind.config.js:/app/tailwind.config.js:cached
       - ./postcss.config.js:/app/postcss.config.js:cached
