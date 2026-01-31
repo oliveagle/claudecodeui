@@ -452,7 +452,7 @@ function Shell({ selectedProject, selectedSession, initialCommand, isPlainShell 
         </div>
       </div>
 
-      <div className="flex-1 p-2 overflow-hidden relative">
+      <div className="flex-1 overflow-hidden relative">
         <div ref={terminalRef} className="h-full w-full focus:outline-none" style={{ outline: 'none' }} />
 
         {!isInitialized && (

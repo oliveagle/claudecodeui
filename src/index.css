@@ -563,6 +563,13 @@
       user-select: text !important;
       -webkit-touch-callout: default !important;
     }
+
+    /* Fix white block at bottom of terminal - force background color */
+    .xterm .xterm-viewport,
+    .xterm .xterm-screen,
+    .xterm .xterm-rows {
+      background-color: #1e1e1e !important;
+    }
     
     /* Fix mobile scrolling */
     .overflow-y-auto {
